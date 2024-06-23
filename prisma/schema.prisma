@@ -1,0 +1,213 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@id([provider, providerAccountId])
+}
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  emailVerified DateTime?
+  password String
+  firstName String
+  lastName String
+  schoolId String
+  // Relationship
+  // M TO 1
+  courseId String?
+  course Course? @relation(fields: [courseId], references: [id])
+  // Optional Fields
+  middleName String? @default("")
+  bio String? @default("")
+  city String? @default("")
+  province String? @default("")
+  country String? @default("")
+  zip String? @default("")
+  birthdate DateTime?
+  image String? @default("")
+  // Admin
+  isAlumni Boolean @default(false)
+  lock Boolean @default(false)
+  role Role @default(USER)
+  archivedAt DateTime?
+  isArchieved Boolean @default(false)
+  isEmailVerified Boolean @default(false)
+  isAdmin Boolean @default(false)
+  isSuperAdmin Boolean @default(false)
+  // Relationship
+  accounts Account[]
+  followedBy Follows[] @relation("followedBy")
+  following  Follows[] @relation("following")
+  preferences Preferences?
+  // M TO M
+  scholarship UserScholarships[]
+  skill UserSkill[]
+  // Content Relationship
+  achievement Achievement[]
+  project Project[]
+  education Education[]
+  contact Contacts[]
+  // Status
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Contacts {
+  id String @id @default(cuid())
+  email String
+  phone String
+  userId String
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Scholarship {
+  id String @id @default(cuid())
+  name String
+  // Relationship
+  user UserScholarships[]
+}
+
+model UserScholarships {
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  scholarshipId String
+  scholarship Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+  selected Boolean @default(false)
+  selectionStatus String @default("none")
+  @@id([userId, scholarshipId])
+}
+
+model Skill {
+  id String @id @default(cuid())
+  name String
+  category String
+  // Relationship
+  user UserSkill[]
+}
+
+model UserSkill {
+  id String @id @default(cuid())
+  userId  String
+  skillId String
+  user     User     @relation(fields: [userId], references: [id])
+  skill    Skill    @relation(fields: [skillId], references: [id])
+  @@unique([userId, skillId])
+}
+
+model Course {
+  id String @id @default(cuid())
+  name String
+  image String?
+  // Relationship
+  user User[]
+}
+
+model Follows {
+  followedBy   User @relation("followedBy", fields: [followedById], references: [id], onDelete: Cascade)
+  followedById String
+  following    User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+  followingId  String
+
+  @@id([followingId, followedById])
+}
+
+model Preferences {
+  id String @id @default(cuid())
+  privacy Privacy @default(PUBLIC)
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Achievement {
+  id String @id @default(cuid())
+  name String
+  dateAchieved DateTime
+  description String
+  type AchievementType
+  // Relationship
+  userId String
+  user User @relation(fields: [userId],references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id String @id @default(cuid())
+  name String
+  dateCompleted DateTime
+  description String
+  // Relationship
+  userId String
+  user User @relation(fields: [userId],references: [id], onDelete: Cascade)
+}
+
+model Education {
+  id String @id @default(cuid())
+  name String
+  dateStarted DateTime
+  dateEnded DateTime?
+  // Relationship
+  userId String
+  user User @relation(fields: [userId],references: [id], onDelete: Cascade)
+}
+
+model PasswordToken {
+  id String @id @default(cuid())
+  token String
+  email String
+  expires DateTime
+  @@unique([token, email])
+}
+
+model EmailToken {
+  id String @id @default(cuid())
+  token String
+  email String
+  expires DateTime
+  password String?
+  @@unique([token, email])
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPERADMIN
+}
+enum Privacy {
+  PUBLIC
+  PRIVATE
+  HIDDEN
+}
+
+enum AchievementType {
+  SCHOOL
+  COMMUNITY
+}
